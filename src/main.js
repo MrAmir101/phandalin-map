@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { buildWorld } from './world.js';
-import { assembleTown } from './buildings.js';
+import { preloadModels } from './assets.js';
+import { buildWorld, WORLD_MODELS } from './world.js';
+import { assembleTown, TOWN_MODELS } from './buildings.js';
 import { buildInn, buildGiant } from './interiors.js';
 import { createControls } from './controls.js';
 import { createUI } from './ui.js';
@@ -24,10 +25,21 @@ if (!webglAvailable()) {
   document.getElementById('webgl-fail').classList.remove('hidden');
   document.getElementById('start-screen').classList.add('hidden');
 } else {
-  boot();
+  boot().catch((err) => {
+    console.error('phandalin: failed to start', err);
+    const prompt = document.getElementById('start-prompt');
+    if (prompt) prompt.textContent = 'Failed to load assets — see console';
+  });
 }
 
-function boot() {
+async function boot() {
+  // preload every town/world model behind the start screen so the first
+  // render (including ?cam/?at debug shots) sees the finished town
+  const bootPrompt = document.getElementById('start-prompt');
+  bootPrompt.textContent = 'Loading…';
+  await preloadModels([...WORLD_MODELS, ...TOWN_MODELS]);
+  bootPrompt.textContent = 'Click to enter the town';
+
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
