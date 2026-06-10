@@ -1,0 +1,86 @@
+<h2>Which visual style for exploring Phandalin?</h2>
+<p class="subtitle">Rough sketches — imagine walking the party token through town with arrow keys or click-to-move. Click the style that fits your table's vibe.</p>
+
+<div class="cards">
+  <div class="card" data-choice="illustrated" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;height:240px;position:relative;background:linear-gradient(160deg,#b5c98e,#9db877);overflow:hidden;">
+      <!-- dirt road -->
+      <div style="position:absolute;left:38%;top:0;width:24%;height:100%;background:#c9b08a;border-radius:40% 40% 0 0 / 10%;box-shadow:inset 0 0 12px #a98f6b;"></div>
+      <div style="position:absolute;left:0;top:55%;width:100%;height:14%;background:#c9b08a;box-shadow:inset 0 0 10px #a98f6b;"></div>
+      <!-- buildings: hand-drawn-ish rounded -->
+      <div style="position:absolute;left:10%;top:18%;width:70px;height:48px;background:#8b5e3c;border:2px solid #5e3c22;border-radius:6px;box-shadow:3px 4px 0 rgba(0,0,0,.2);"></div>
+      <div style="position:absolute;left:12%;top:12%;width:62px;height:18px;background:#a8442e;border-radius:50% 50% 0 0;border:2px solid #5e3c22;"></div>
+      <div style="position:absolute;left:13%;top:70%;width:56px;height:40px;background:#8b5e3c;border:2px solid #5e3c22;border-radius:6px;box-shadow:3px 4px 0 rgba(0,0,0,.2);"></div>
+      <div style="position:absolute;right:10%;top:20%;width:80px;height:52px;background:#7c8aa0;border:2px solid #4a5568;border-radius:6px;box-shadow:3px 4px 0 rgba(0,0,0,.2);"></div>
+      <div style="position:absolute;right:14%;top:72%;width:60px;height:42px;background:#8b5e3c;border:2px solid #5e3c22;border-radius:6px;box-shadow:3px 4px 0 rgba(0,0,0,.2);"></div>
+      <!-- trees -->
+      <div style="position:absolute;left:4%;top:48%;width:26px;height:26px;background:#4f7942;border-radius:50%;border:2px solid #3a5a30;"></div>
+      <div style="position:absolute;right:4%;top:50%;width:30px;height:30px;background:#4f7942;border-radius:50%;border:2px solid #3a5a30;"></div>
+      <!-- party token -->
+      <div style="position:absolute;left:46%;top:58%;width:26px;height:26px;background:#f6c453;border:3px solid #b8860b;border-radius:50%;box-shadow:0 0 10px rgba(246,196,83,.9);"></div>
+      <!-- label tooltip -->
+      <div style="position:absolute;right:6%;top:8%;background:rgba(40,30,20,.85);color:#f3e6c8;font-size:11px;padding:3px 8px;border-radius:4px;font-family:Georgia,serif;">Townmaster's Hall</div>
+    </div>
+    <div class="card-body">
+      <h3>Illustrated fantasy map</h3>
+      <p>A warm, hand-drawn-style top-down town. The party token glows and moves smoothly; nearing a building shows its name, entering opens its details. Reads like a living version of a campaign map — great on a TV at the table.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="retro" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;height:240px;position:relative;background:#7ec850;overflow:hidden;image-rendering:pixelated;">
+      <!-- pixel grid feel -->
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px);background-size:16px 16px;"></div>
+      <!-- path tiles -->
+      <div style="position:absolute;left:40%;top:0;width:16%;height:100%;background:#d8b56a;"></div>
+      <div style="position:absolute;left:0;top:60%;width:100%;height:16px;background:#d8b56a;"></div>
+      <!-- pixel buildings: blocky, hard edges -->
+      <div style="position:absolute;left:8%;top:16%;width:64px;height:32px;background:#9c5a3c;"></div>
+      <div style="position:absolute;left:8%;top:4%;width:64px;height:16px;background:#d04648;"></div>
+      <div style="position:absolute;left:8%;top:16%;width:64px;height:32px;background-image:linear-gradient(90deg,rgba(0,0,0,.15) 2px,transparent 2px);background-size:8px 8px;"></div>
+      <div style="position:absolute;right:8%;top:14%;width:80px;height:36px;background:#8595a1;"></div>
+      <div style="position:absolute;right:8%;top:0;width:80px;height:18px;background:#4e6679;"></div>
+      <div style="position:absolute;left:10%;bottom:8%;width:56px;height:30px;background:#9c5a3c;"></div>
+      <div style="position:absolute;left:10%;bottom:20%;width:56px;height:14px;background:#d04648;"></div>
+      <!-- pixel trees -->
+      <div style="position:absolute;right:6%;bottom:10%;width:24px;height:24px;background:#2e7d32;"></div>
+      <div style="position:absolute;right:6%;bottom:6%;width:24px;height:10px;background:#6d4c41;clip-path:inset(0 35% 0 35%);"></div>
+      <!-- pixel hero sprite -->
+      <div style="position:absolute;left:46%;top:50%;width:16px;height:10px;background:#3b5dc9;"></div>
+      <div style="position:absolute;left:46%;top:44%;width:16px;height:8px;background:#f1c27d;"></div>
+      <div style="position:absolute;left:46%;top:41%;width:16px;height:4px;background:#5d4037;"></div>
+      <!-- dialog box -->
+      <div style="position:absolute;left:4%;right:4%;bottom:2%;background:#fff;border:3px solid #333;border-radius:2px;padding:4px 8px;font-family:monospace;font-size:10px;color:#222;">TOBLEN: Welcome to the Stonehill Inn, traveler!</div>
+    </div>
+    <div class="card-body">
+      <h3>Retro pixel RPG</h3>
+      <p>16-bit Zelda/Pokémon-style tiles. Walk a pixel hero through town, bump into doors to enter, and NPC dialog appears in classic text boxes. Nostalgic and playful — the most "video game" feel of the three.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="parchment" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0;height:240px;position:relative;background:#e8d9b5;overflow:hidden;">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(120,90,40,.35) 100%);"></div>
+      <!-- ink roads -->
+      <div style="position:absolute;left:42%;top:0;width:10px;height:100%;background:#8a6d3b;opacity:.5;"></div>
+      <div style="position:absolute;left:0;top:58%;width:100%;height:8px;background:#8a6d3b;opacity:.5;"></div>
+      <!-- ink-outline buildings -->
+      <div style="position:absolute;left:10%;top:16%;width:66px;height:44px;background:transparent;border:2.5px solid #4a3520;border-radius:2px;"></div>
+      <div style="position:absolute;left:10%;top:16%;width:66px;height:44px;background-image:repeating-linear-gradient(45deg,#4a3520 0 1px,transparent 1px 6px);opacity:.35;"></div>
+      <div style="position:absolute;right:12%;top:20%;width:78px;height:48px;border:2.5px solid #4a3520;border-radius:2px;background-image:repeating-linear-gradient(45deg,#4a3520 0 1px,transparent 1px 6px);opacity:.85;"></div>
+      <div style="position:absolute;left:14%;bottom:12%;width:58px;height:40px;border:2.5px solid #4a3520;border-radius:2px;"></div>
+      <!-- numbered markers -->
+      <div style="position:absolute;left:13%;top:8%;width:20px;height:20px;background:#7b1e1e;color:#f3e6c8;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;">1</div>
+      <div style="position:absolute;right:15%;top:12%;width:20px;height:20px;background:#7b1e1e;color:#f3e6c8;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;">5</div>
+      <!-- compass -->
+      <div style="position:absolute;right:5%;bottom:8%;width:34px;height:34px;border:2px solid #4a3520;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#4a3520;font-family:Georgia,serif;font-size:14px;">N</div>
+      <!-- party token: ink figure -->
+      <div style="position:absolute;left:45%;top:52%;width:22px;height:22px;background:#7b1e1e;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:2px 2px 4px rgba(0,0,0,.3);"></div>
+      <div style="position:absolute;left:8%;bottom:2%;font-family:Georgia,serif;font-style:italic;font-size:13px;color:#4a3520;">~ Phandalin ~</div>
+    </div>
+    <div class="card-body">
+      <h3>Aged parchment / ink atlas</h3>
+      <p>Looks like the official module's cartography: sepia parchment, ink-drawn buildings, numbered locations, a compass rose. The party moves a red wax-seal marker. The most "authentic D&D handout" feel, slightly less game-like.</p>
+    </div>
+  </div>
+</div>
