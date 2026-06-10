@@ -2,11 +2,11 @@ import * as THREE from 'three';
 import { preloadModels } from './assets.js';
 import { buildWorld, WORLD_MODELS } from './world.js';
 import { assembleTown, TOWN_MODELS } from './buildings.js';
-import { buildInn, buildGiant } from './interiors.js';
+import { buildInn, buildGiant, INTERIOR_MODELS } from './interiors.js';
 import { createControls } from './controls.js';
 import { createUI } from './ui.js';
 import { pickHotspot, actionVerb } from './interact.js';
-import { spawnNpcs } from './npcs.js';
+import { spawnNpcs, NPC_MODELS } from './npcs.js';
 import { locations } from '../data/locations.js';
 
 const canvas = document.getElementById('scene');
@@ -37,7 +37,7 @@ async function boot() {
   // render (including ?cam/?at debug shots) sees the finished town
   const bootPrompt = document.getElementById('start-prompt');
   bootPrompt.textContent = 'Loading…';
-  await preloadModels([...WORLD_MODELS, ...TOWN_MODELS]);
+  await preloadModels([...WORLD_MODELS, ...TOWN_MODELS, ...NPC_MODELS, ...INTERIOR_MODELS]);
   bootPrompt.textContent = 'Click to enter the town';
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 // GLTF model loading and placement for the KayKit packs.
 // All models are preloaded once behind the start screen; after that every
@@ -8,6 +9,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const loader = new GLTFLoader();
 const cache = new Map();      // path -> template scene (Group)
+const animCache = new Map();  // path -> AnimationClip[]
 const tintCache = new Map();  // materialUuid:tint -> tinted material clone
 
 export async function preloadModels(paths) {
@@ -15,6 +17,7 @@ export async function preloadModels(paths) {
     if (cache.has(path)) return;
     const gltf = await loader.loadAsync(path);
     const root = gltf.scene;
+    if (gltf.animations && gltf.animations.length) animCache.set(path, gltf.animations);
     stripHexBase(root);
     root.traverse((o) => {
       if (o.isMesh) {
@@ -39,6 +42,19 @@ export function cloneModel(path) {
   const tpl = cache.get(path);
   if (!tpl) throw new Error(`model not preloaded: ${path}`);
   return tpl.clone(true);
+}
+
+// Rigged characters need SkeletonUtils.clone so each instance gets its own
+// bone hierarchy (a plain .clone(true) leaves SkinnedMeshes bound to the
+// template's skeleton and every copy would animate in lockstep).
+export function cloneCharacter(path) {
+  const tpl = cache.get(path);
+  if (!tpl) throw new Error(`model not preloaded: ${path}`);
+  return skeletonClone(tpl);
+}
+
+export function animationsOf(path) {
+  return animCache.get(path) || [];
 }
 
 function tintedMaterial(material, tint) {

@@ -1,15 +1,77 @@
 import * as THREE from 'three';
 import { mat } from './world.js';
+import { placeModel, boxOf } from './assets.js';
 import { spawnNpcs } from './npcs.js';
 
-// Walk-in interiors for the Stonehill Inn and the Sleeping Giant.
-// Each returns a self-contained "stage": its own scene, colliders,
-// hotspots (exit door, bar info point, NPCs), spawn point, and tick.
+// Walk-in interiors for the Stonehill Inn and the Sleeping Giant, furnished
+// with KayKit dungeon/furniture models over a simple plaster-and-beam shell.
+// Each returns a self-contained "stage": its own scene, colliders, hotspots
+// (exit door, bar info point, NPCs), spawn point, and tick.
+
+const D = 'assets/dungeon/';
+const F = 'assets/furniture/';
+
+export const INTERIOR_MODELS = [
+  D + 'floor_wood_large.gltf.glb',
+  D + 'floor_wood_large_dark.gltf.glb',
+  D + 'table_long.gltf.glb',
+  D + 'table_medium_decorated_A.gltf.glb',
+  D + 'table_medium_tablecloth_decorated_B.gltf.glb',
+  D + 'table_small_decorated_A.gltf.glb',
+  D + 'table_medium_broken.gltf.glb',
+  D + 'table_small.gltf.glb',
+  D + 'chair.gltf.glb',
+  D + 'stool.gltf.glb',
+  D + 'shelves.gltf.glb',
+  D + 'keg.gltf.glb',
+  D + 'keg_decorated.gltf.glb',
+  D + 'barrel_small.gltf.glb',
+  D + 'barrel_small_stack.gltf.glb',
+  D + 'barrel_large.gltf.glb',
+  D + 'crates_stacked.gltf.glb',
+  D + 'box_small.gltf.glb',
+  D + 'candle_lit.gltf.glb',
+  D + 'candle_triple.gltf.glb',
+  D + 'candle_melted.gltf.glb',
+  D + 'bottle_A_brown.gltf.glb',
+  D + 'bottle_B_green.gltf.glb',
+  D + 'bottle_C_brown.gltf.glb',
+  D + 'plate_food_A.gltf.glb',
+  D + 'plate_stack.gltf.glb',
+  D + 'stairs_wood.gltf.glb',
+  D + 'torch_mounted.gltf.glb',
+  D + 'banner_patternA_red.gltf.glb',
+  F + 'rug_rectangle_stripes_A.gltf',
+];
+
+// place a model; sx/sy/sz override the uniform scale per axis (local space),
+// solid adds a box collider from the settled world bounds.
+function put(scene, colliders, path, { x = 0, y = 0, z = 0, ry = 0, s = 1, sx, sy, sz, solid = false, pad = 0.04, tint = null, rx = 0, rz = 0 } = {}) {
+  const obj = placeModel(scene, path, { x, y, z, rotY: ry, scale: s, tint });
+  if (sx != null || sy != null || sz != null) obj.scale.set(sx ?? s, sy ?? s, sz ?? s);
+  if (rx) obj.rotation.x = rx;
+  if (rz) obj.rotation.z = rz;
+  if (solid) {
+    const b = boxOf(obj);
+    colliders.push({ minX: b.min.x - pad, maxX: b.max.x + pad, minZ: b.min.z - pad, maxZ: b.max.z + pad });
+  }
+  return obj;
+}
+
+function woodFloor(scene, path, w, d) {
+  // 3.2 m planked tiles, sunk so their top sits at y=0 with the room shell
+  const step = 3.2;
+  for (let x = -w / 2 + step / 2; x < w / 2; x += step) {
+    for (let z = -d / 2 + step / 2; z < d / 2; z += step) {
+      placeModel(scene, path, { x, y: -0.04, z, scale: 0.8 });
+    }
+  }
+}
 
 function room(scene, { w, d, h, floor, wall, beam }) {
   const colliders = [];
   const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 1, 0.3, d + 1), mat(floor));
-  floorMesh.position.y = -0.15;
+  floorMesh.position.y = -0.2;
   floorMesh.receiveShadow = true;
   scene.add(floorMesh);
 
@@ -45,73 +107,8 @@ function room(scene, { w, d, h, floor, wall, beam }) {
   return colliders;
 }
 
-function table(scene, colliders, x, z, { tilt = 0, stools = 3 } = {}) {
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.07, 8), mat(0x6e4a2e));
-  top.position.set(x, 0.78, z);
-  top.rotation.x = tilt;
-  top.castShadow = true;
-  scene.add(top);
-  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.78, 6), mat(0x52402c));
-  leg.position.set(x, 0.39, z);
-  scene.add(leg);
-  for (let i = 0; i < stools; i++) {
-    const a = (i / stools) * Math.PI * 2 + x + z;
-    const sx = x + Math.cos(a) * 1.05, sz = z + Math.sin(a) * 1.05;
-    const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.5, 6), mat(0x7a5c3a));
-    stool.position.set(sx, 0.25, sz);
-    stool.castShadow = true;
-    scene.add(stool);
-  }
-  colliders.push({ minX: x - 0.7, maxX: x + 0.7, minZ: z - 0.7, maxZ: z + 0.7 });
-  // candle
-  const candle = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.04, 0.16, 5),
-    mat(0xfff3c4, { emissive: 0xffc24d, emissiveIntensity: 1.2 })
-  );
-  candle.position.set(x + 0.15, 0.9, z);
-  candle.rotation.x = tilt;
-  scene.add(candle);
-}
-
-function bar(scene, colliders, { x = 0, z = 0, len = 5, along = 'z' } = {}) {
-  const geo = along === 'z'
-    ? new THREE.BoxGeometry(1.0, 1.1, len)
-    : new THREE.BoxGeometry(len, 1.1, 1.0);
-  const counter = new THREE.Mesh(geo, mat(0x5c4430));
-  counter.position.set(x, 0.55, z);
-  counter.castShadow = true;
-  scene.add(counter);
-  const slabGeo = along === 'z'
-    ? new THREE.BoxGeometry(1.25, 0.08, len + 0.25)
-    : new THREE.BoxGeometry(len + 0.25, 0.08, 1.25);
-  const slab = new THREE.Mesh(slabGeo, mat(0x6e4a2e));
-  slab.position.set(x, 1.14, z);
-  scene.add(slab);
-  if (along === 'z') colliders.push({ minX: x - 0.7, maxX: x + 0.7, minZ: z - len / 2, maxZ: z + len / 2 });
-  else colliders.push({ minX: x - len / 2, maxX: x + len / 2, minZ: z - 0.7, maxZ: z + 0.7 });
-}
-
-function shelves(scene, x, z, len, along = 'z') {
-  const bottleColors = [0x6b8e5a, 0x8c5a2f, 0x4a6a8c, 0x9b3b3b, 0xb8862d];
-  for (const y of [1.5, 2.1]) {
-    const geo = along === 'z'
-      ? new THREE.BoxGeometry(0.35, 0.06, len)
-      : new THREE.BoxGeometry(len, 0.06, 0.35);
-    const shelf = new THREE.Mesh(geo, mat(0x52402c));
-    shelf.position.set(x, y, z);
-    scene.add(shelf);
-    for (let i = 0; i < 6; i++) {
-      const o = -len / 2 + 0.4 + (i * (len - 0.8)) / 5;
-      const bottle = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.06, 0.07, 0.3, 5),
-        mat(bottleColors[(i + (y === 2.1 ? 2 : 0)) % bottleColors.length])
-      );
-      bottle.position.set(along === 'z' ? x : x + o, y + 0.18, along === 'z' ? z + o : z);
-      scene.add(bottle);
-    }
-  }
-}
-
+// Stone hearth shell (no fireplace model in the packs) with an emissive
+// flame cone and a flickering point light.
 function hearth(scene, colliders, x, z, rotY = 0) {
   const g = new THREE.Group();
   const stone = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 0.8), mat(0x8d8678));
@@ -148,36 +145,62 @@ function baseScene(bg) {
 
 export function buildInn(locationId) {
   const scene = baseScene(0x14100a);
-  const colliders = room(scene, { w: 12, d: 9, h: 3.4, floor: 0x7a5c3a, wall: 0xc9b08a, beam: 0x52402c });
+  const colliders = room(scene, { w: 12, d: 9, h: 3.4, floor: 0x4a3826, wall: 0xc9b08a, beam: 0x52402c });
+  woodFloor(scene, D + 'floor_wood_large.gltf.glb', 12, 9);
 
   scene.add(new THREE.AmbientLight(0xffd9a8, 0.34));
-  const lamp = new THREE.PointLight(0xffc685, 20, 18, 1.6);
-  lamp.position.set(0, 2.9, 0);
+  const lamp = new THREE.PointLight(0xffc685, 18, 18, 1.6);
+  lamp.position.set(0.5, 2.9, 0);
   lamp.castShadow = true;
+  lamp.shadow.normalBias = 0.06;
+  lamp.shadow.bias = -0.002;
   scene.add(lamp);
 
-  bar(scene, colliders, { x: -4.6, z: 0, len: 5.5, along: 'z' });
-  shelves(scene, -5.8, 0, 4.5, 'z');
+  // --- the bar: two long-table segments along the west side, kegs + a
+  // bottle-laden wall shelf behind, Toblen's station between them
+  put(scene, colliders, D + 'table_long.gltf.glb', { x: -4.6, z: -1.44, sx: 0.55, sy: 0.8, sz: 0.72, solid: true });
+  put(scene, colliders, D + 'table_long.gltf.glb', { x: -4.6, z: 1.44, sx: 0.55, sy: 0.8, sz: 0.72, solid: true });
+  put(scene, colliders, D + 'shelves.gltf.glb', { x: -5.78, z: -1.2, ry: Math.PI / 2, s: 0.9 });
+  put(scene, colliders, D + 'shelves.gltf.glb', { x: -5.78, z: 1.2, ry: Math.PI / 2, s: 0.9 });
+  put(scene, colliders, D + 'keg_decorated.gltf.glb', { x: -5.0, z: -3.5, ry: Math.PI / 4, s: 0.55, solid: true });
+  put(scene, colliders, D + 'barrel_small.gltf.glb', { x: -5.35, z: 3.6, s: 0.75, solid: true });
+  // bar-top dressing
+  put(scene, colliders, D + 'candle_triple.gltf.glb', { x: -4.6, y: 0.8, z: 0.2, s: 0.55 });
+  put(scene, colliders, D + 'bottle_A_brown.gltf.glb', { x: -4.75, y: 0.8, z: -1.0, s: 0.5 });
+  put(scene, colliders, D + 'bottle_B_green.gltf.glb', { x: -4.45, y: 0.8, z: 1.7, s: 0.5 });
+  put(scene, colliders, D + 'plate_stack.gltf.glb', { x: -4.6, y: 0.8, z: -2.3, s: 0.5 });
+
+  // --- hearth on the north wall, striped rug and decorated tables
   const { flame, fire } = hearth(scene, colliders, -1, -4.2, 0);
+  put(scene, colliders, F + 'rug_rectangle_stripes_A.gltf', { x: -1, y: 0.012, z: -2.5, s: 1.15 });
 
-  table(scene, colliders, 2.2, -2.2);
-  table(scene, colliders, 2.4, 2.3);
-  table(scene, colliders, -1.2, 2.6);
-  table(scene, colliders, 4.2, 0.2, { stools: 2 });
+  // tables come "decorated": candles, tankards, plates baked into the model
+  put(scene, colliders, D + 'table_medium_decorated_A.gltf.glb', { x: 2.2, z: -2.4, ry: 0.3, s: 0.72, solid: true });
+  put(scene, colliders, D + 'table_medium_tablecloth_decorated_B.gltf.glb', { x: 2.4, z: 2.3, ry: -0.2, s: 0.72, solid: true });
+  put(scene, colliders, D + 'table_small_decorated_A.gltf.glb', { x: -1.4, z: 2.6, ry: 0.8, s: 0.8, solid: true });
+  put(scene, colliders, D + 'candle_lit.gltf.glb', { x: 2.0, y: 0.72, z: -2.2, s: 0.45 });
+  put(scene, colliders, D + 'plate_food_A.gltf.glb', { x: -1.4, y: 0.8, z: 2.6, s: 0.5 });
 
-  // staircase to the rooms, against the south wall
-  for (let i = 0; i < 5; i++) {
-    const step = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.36 * (i + 1), 0.6), mat(0x6e4a2e));
-    step.position.set(0.6 + i * 0.6, 0.18 * (i + 1), 3.9);
-    scene.add(step);
-  }
-  colliders.push({ minX: 0.2, maxX: 3.6, minZ: 3.4, maxZ: 4.5 });
+  // chairs and stools (walk-through, like the old procedural stools)
+  put(scene, colliders, D + 'chair.gltf.glb', { x: 1.0, z: -2.2, ry: Math.PI / 2, s: 0.72 });
+  put(scene, colliders, D + 'chair.gltf.glb', { x: 3.4, z: -2.7, ry: -Math.PI / 2 + 0.4, s: 0.72 });
+  put(scene, colliders, D + 'chair.gltf.glb', { x: 2.2, z: 3.5, ry: Math.PI + 0.2, s: 0.72 });
+  put(scene, colliders, D + 'chair.gltf.glb', { x: 3.6, z: 1.8, ry: -Math.PI / 2 - 0.5, s: 0.72 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: -0.4, z: 2.0, s: 0.85 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: -2.3, z: 3.0, s: 0.85 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: -3.6, z: -1.0, s: 0.85 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: -3.6, z: 0.6, s: 0.85 });
 
-  // rug by the hearth
-  const rug = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.04, 1.8), mat(0x8c2f2f));
-  rug.position.set(-1, 0.02, -2.6);
-  rug.receiveShadow = true;
-  scene.add(rug);
+  // staircase to the rooms upstairs, against the south wall
+  put(scene, colliders, D + 'stairs_wood.gltf.glb', { x: 1.8, z: 3.6, ry: -Math.PI / 2, s: 0.55, solid: true });
+
+  // wall dressing: mounted torches by the door, a banner over the hearth
+  put(scene, colliders, D + 'torch_mounted.gltf.glb', { x: 5.7, y: 1.9, z: -2.4, ry: -Math.PI / 2, s: 0.8 });
+  put(scene, colliders, D + 'torch_mounted.gltf.glb', { x: 5.7, y: 1.9, z: 2.4, ry: -Math.PI / 2, s: 0.8 });
+  put(scene, colliders, D + 'banner_patternA_red.gltf.glb', { x: -1, y: 1.0, z: -4.28, s: 0.6 });
+
+  // doorstep clutter, kept clear of the spawn at (4.4, 0)
+  put(scene, colliders, D + 'barrel_small.gltf.glb', { x: 5.1, z: -3.6, s: 0.7, solid: true });
 
   const npcStage = spawnNpcs(scene, 'inn', null);
 
@@ -202,42 +225,45 @@ export function buildInn(locationId) {
 }
 
 export function buildGiant(locationId) {
-  const scene = baseScene(0x100d0a);
-  const colliders = room(scene, { w: 9, d: 7, h: 3.1, floor: 0x564231, wall: 0x6e5d49, beam: 0x3e3226 });
+  const scene = baseScene(0x0d0c0e);
+  const colliders = room(scene, { w: 9, d: 7, h: 3.1, floor: 0x3a3027, wall: 0x6e5d49, beam: 0x3e3226 });
+  woodFloor(scene, D + 'floor_wood_large_dark.gltf.glb', 9, 7);
 
-  // dim, cheerless light
-  scene.add(new THREE.AmbientLight(0xb8c4cc, 0.22));
-  const lamp = new THREE.PointLight(0xd9c49a, 9, 14, 1.7);
+  // dim, cheerless, slightly blue — no hearth here, just one tired lamp
+  scene.add(new THREE.AmbientLight(0x9aa6b8, 0.26));
+  const lamp = new THREE.PointLight(0xc8bfa0, 8, 14, 1.7);
   lamp.position.set(-1, 2.6, 0);
   lamp.castShadow = true;
+  lamp.shadow.normalBias = 0.06;
+  lamp.shadow.bias = -0.002;
   scene.add(lamp);
 
-  bar(scene, colliders, { x: 0, z: 2.3, len: 5, along: 'x' });
-  shelves(scene, 0, 3.3, 3.5, 'x');
+  // --- the bar along the back wall, Grista's crate behind it
+  put(scene, colliders, D + 'table_long.gltf.glb', { x: 0, z: 2.3, ry: Math.PI / 2, sx: 0.5, sy: 0.8, sz: 1.1, solid: true });
+  put(scene, colliders, D + 'box_small.gltf.glb', { x: 0, z: 3.0, s: 0.45 }); // she stands on it
+  put(scene, colliders, D + 'keg.gltf.glb', { x: -2.4, z: 3.0, ry: 0.3, s: 0.5, solid: true });
+  put(scene, colliders, D + 'shelves.gltf.glb', { x: 1.6, z: 3.43, ry: Math.PI, s: 0.8 });
+  // bar top: one guttered candle and cheap bottles — no food here
+  put(scene, colliders, D + 'candle_melted.gltf.glb', { x: 0.9, y: 0.8, z: 2.3, s: 0.55 });
+  put(scene, colliders, D + 'bottle_C_brown.gltf.glb', { x: -0.9, y: 0.8, z: 2.4, s: 0.5 });
+  put(scene, colliders, D + 'bottle_B_green.gltf.glb', { x: -1.4, y: 0.8, z: 2.2, s: 0.45 });
 
-  table(scene, colliders, -2.2, 0.6, { tilt: 0.04, stools: 2 });
-  table(scene, colliders, 2.4, -0.9, { tilt: -0.05, stools: 2 });
+  // --- shabby seating: one broken table, one bare table, a tipped stool
+  put(scene, colliders, D + 'table_medium_broken.gltf.glb', { x: -2.4, z: 0.4, ry: 0.5, s: 0.75, solid: true });
+  put(scene, colliders, D + 'table_small.gltf.glb', { x: 2.4, z: -0.9, ry: 0.2, s: 0.85, solid: true });
+  put(scene, colliders, D + 'candle_lit.gltf.glb', { x: 2.4, y: 0.85, z: -0.9, s: 0.4 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: 3.3, z: -1.3, s: 0.85 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: 2.0, z: -1.9, s: 0.85 });
+  put(scene, colliders, D + 'stool.gltf.glb', { x: -1.5, z: -0.7, s: 0.85 });
+  // tipped over where the last fight ended
+  put(scene, colliders, D + 'stool.gltf.glb', { x: 0.8, y: 0.3, z: -1.8, rz: Math.PI / 2.1, s: 0.85 });
 
-  // a broken stool on its side
-  const broken = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.5, 6), mat(0x7a5c3a));
-  broken.position.set(0.8, 0.25, -1.8);
-  broken.rotation.z = Math.PI / 2.1;
-  scene.add(broken);
-
-  // barrel stack in the corner
-  const barrelGeo = new THREE.CylinderGeometry(0.4, 0.36, 0.95, 8);
-  for (const [bx, bz, by] of [[-3.6, 2.5, 0.48], [-2.8, 2.7, 0.48], [-3.2, 2.6, 1.4]]) {
-    const b = new THREE.Mesh(barrelGeo, mat(0x7a5c3a));
-    b.position.set(bx, by, bz);
-    b.castShadow = true;
-    scene.add(b);
-  }
-  colliders.push({ minX: -4.2, maxX: -2.3, minZ: 2.0, maxZ: 3.3 });
-
-  // Grista's crate — she's a dwarf and the bar would swallow her whole
-  const crate = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.45, 0.8), mat(0x52402c));
-  crate.position.set(0, 0.225, 3.0);
-  scene.add(crate);
+  // --- barrels and crates: more warehouse than tavern
+  put(scene, colliders, D + 'barrel_small_stack.gltf.glb', { x: -3.5, z: 2.5, ry: 0.2, s: 0.75, solid: true });
+  put(scene, colliders, D + 'barrel_large.gltf.glb', { x: 3.7, z: 2.5, s: 0.5, solid: true });
+  put(scene, colliders, D + 'crates_stacked.gltf.glb', { x: -3.6, z: -2.4, ry: 0.4, s: 0.55, solid: true });
+  // a red banner someone nailed up — the only decoration the regulars allow
+  put(scene, colliders, D + 'banner_patternA_red.gltf.glb', { x: -4.28, y: 0.8, z: 0.5, ry: Math.PI / 2, s: 0.55, tint: 0x8a5a52 });
 
   const npcStage = spawnNpcs(scene, 'giant', null);
 
@@ -255,7 +281,7 @@ export function buildGiant(locationId) {
     spawn: { x: 0, z: -2.5, yaw: Math.PI },
     tick(dt, playerPos, t) {
       npcStage.tick(dt, playerPos, t);
-      lamp.intensity = 9 * (1 + 0.1 * Math.sin(t * 7));
+      lamp.intensity = 8 * (1 + 0.1 * Math.sin(t * 7) + 0.05 * Math.sin(t * 17));
     },
   };
 }

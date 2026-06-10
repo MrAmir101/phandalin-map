@@ -37,6 +37,14 @@ test('every npc references a valid location and scene', () => {
   }
 });
 
+test('every npc casts a valid character model with an optional numeric tint', () => {
+  const models = new Set(['barbarian', 'knight', 'mage', 'rogue', 'rogue-hooded']);
+  for (const n of npcs) {
+    assert.ok(models.has(n.model), `${n.id} -> ${n.model}`);
+    if (n.tint != null) assert.equal(typeof n.tint, 'number', n.id);
+  }
+});
+
 test('named npcs have dialog; villagers have waypoints', () => {
   for (const n of npcs) {
     if (n.id.startsWith('villager')) {
