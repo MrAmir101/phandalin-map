@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phandalin — First-Person Explorer</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+  { "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div id="webgl-fail" class="hidden">
+  <h1>Phandalin</h1>
+  <p>This explorer needs WebGL, which your browser doesn't seem to support.
+     Try a recent version of Firefox, Chrome, or Edge.</p>
+</div>
+
+<div id="start-screen">
+  <div class="start-card">
+    <h1>Phandalin</h1>
+    <p class="tagline">A frontier town on the Triboar Trail</p>
+    <p class="controls-hint">
+      <span><b>W A S D</b> walk</span>
+      <span><b>Mouse</b> look</span>
+      <span><b>Shift</b> hurry</span>
+      <span><b>E</b> interact</span>
+      <span><b>Esc</b> pause</span>
+    </p>
+    <p class="click-to-start" id="start-prompt">Click to enter the town</p>
+  </div>
+</div>
+
+<div id="crosshair" class="hidden"></div>
+<div id="float-label" class="hidden"></div>
+<div id="hint" class="hidden"></div>
+
+<aside id="panel" class="hidden">
+  <button id="panel-close" aria-label="Close">×</button>
+  <h2 id="panel-name"></h2>
+  <p id="panel-blurb"></p>
+  <div id="panel-body"></div>
+</aside>
+
+<div id="dialog" class="hidden">
+  <div id="dialog-portrait"></div>
+  <div class="dialog-text">
+    <h3 id="dialog-name"></h3>
+    <p id="dialog-line"></p>
+    <span id="dialog-more">E ▸</span>
+  </div>
+</div>
+
+<div id="fade"></div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
