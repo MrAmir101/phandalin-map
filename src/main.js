@@ -204,9 +204,21 @@ function boot() {
     return loc ? loc.name : h.id;
   }
 
+  // read-only handle for console poking and automated playtests
+  window.__phandalin = {
+    get pos() { const p = controls.player.position; return { x: p.x, y: p.y, z: p.z }; },
+    get yaw() { return controls.yaw; },
+    get hotspot() { return currentHotspot && { kind: currentHotspot.kind, id: currentHotspot.id }; },
+    get stage() { return stage === townStage ? 'town' : stage.locationId; },
+    get modal() { return ui.modalOpen; },
+    get locked() { return controls.isLocked(); },
+  };
+
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
-    const dt = Math.min(clock.getDelta(), 0.05);
+    // generous clamp: keeps walk speed correct down to ~7 fps on weak
+    // machines while still preventing teleports after a background tab
+    const dt = Math.min(clock.getDelta(), 0.15);
     const pos = debugView
       ? { x: camera.position.x, z: camera.position.z }
       : { x: controls.player.position.x, z: controls.player.position.z };
