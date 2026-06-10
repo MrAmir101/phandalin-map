@@ -119,7 +119,7 @@ function hearth(scene, colliders, x, z, rotY = 0) {
   g.add(opening);
   const flame = new THREE.Mesh(
     new THREE.ConeGeometry(0.32, 0.7, 6),
-    mat(0xff9a3c, { emissive: 0xff7a1a, emissiveIntensity: 2.2 })
+    mat(0xff9a3c, { emissive: 0xff7a1a, emissiveIntensity: 3.4 })
   );
   flame.position.set(0, 0.5, 0.35);
   g.add(flame);
@@ -137,6 +137,18 @@ function hearth(scene, colliders, x, z, rotY = 0) {
   return { flame, fire };
 }
 
+// Tiny emissive flame cone perched on a lit candle/torch model (the KayKit
+// flames are plain textured geometry) so they catch the bloom pass.
+function candleFlame(scene, x, y, z, s = 1) {
+  const f = new THREE.Mesh(
+    new THREE.ConeGeometry(0.045 * s, 0.15 * s, 5),
+    mat(0xffc46a, { emissive: 0xffa033, emissiveIntensity: 3 })
+  );
+  f.position.set(x, y, z);
+  scene.add(f);
+  return f;
+}
+
 function baseScene(bg) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(bg);
@@ -148,7 +160,7 @@ export function buildInn(locationId) {
   const colliders = room(scene, { w: 12, d: 9, h: 3.4, floor: 0x4a3826, wall: 0xc9b08a, beam: 0x52402c });
   woodFloor(scene, D + 'floor_wood_large.gltf.glb', 12, 9);
 
-  scene.add(new THREE.AmbientLight(0xffd9a8, 0.34));
+  scene.add(new THREE.AmbientLight(0xffd9a8, 0.42));
   const lamp = new THREE.PointLight(0xffc685, 18, 18, 1.6);
   lamp.position.set(0.5, 2.9, 0);
   lamp.castShadow = true;
@@ -197,6 +209,12 @@ export function buildInn(locationId) {
   // wall dressing: mounted torches by the door, a banner over the hearth
   put(scene, colliders, D + 'torch_mounted.gltf.glb', { x: 5.7, y: 1.9, z: -2.4, ry: -Math.PI / 2, s: 0.8 });
   put(scene, colliders, D + 'torch_mounted.gltf.glb', { x: 5.7, y: 1.9, z: 2.4, ry: -Math.PI / 2, s: 0.8 });
+
+  // emissive flame tips so the candles and torches bloom
+  candleFlame(scene, -4.56, 1.23, 0.2, 1.2);   // triple candle on the bar
+  candleFlame(scene, 2.0, 1.12, -2.2);         // table candle by the hearth
+  candleFlame(scene, 5.34, 2.32, -2.4, 1.6);   // door torches
+  candleFlame(scene, 5.34, 2.32, 2.4, 1.6);
   put(scene, colliders, D + 'banner_patternA_red.gltf.glb', { x: -1, y: 1.0, z: -4.28, s: 0.6 });
 
   // doorstep clutter, kept clear of the spawn at (4.4, 0)
@@ -230,7 +248,7 @@ export function buildGiant(locationId) {
   woodFloor(scene, D + 'floor_wood_large_dark.gltf.glb', 9, 7);
 
   // dim, cheerless, slightly blue — no hearth here, just one tired lamp
-  scene.add(new THREE.AmbientLight(0x9aa6b8, 0.26));
+  scene.add(new THREE.AmbientLight(0x9aa6b8, 0.32));
   const lamp = new THREE.PointLight(0xc8bfa0, 8, 14, 1.7);
   lamp.position.set(-1, 2.6, 0);
   lamp.castShadow = true;
@@ -247,11 +265,13 @@ export function buildGiant(locationId) {
   put(scene, colliders, D + 'candle_melted.gltf.glb', { x: 0.9, y: 0.8, z: 2.3, s: 0.55 });
   put(scene, colliders, D + 'bottle_C_brown.gltf.glb', { x: -0.9, y: 0.8, z: 2.4, s: 0.5 });
   put(scene, colliders, D + 'bottle_B_green.gltf.glb', { x: -1.4, y: 0.8, z: 2.2, s: 0.45 });
+  candleFlame(scene, 0.9, 1.14, 2.3, 0.9);     // guttered bar candle
 
   // --- shabby seating: one broken table, one bare table, a tipped stool
   put(scene, colliders, D + 'table_medium_broken.gltf.glb', { x: -2.4, z: 0.4, ry: 0.5, s: 0.75, solid: true });
   put(scene, colliders, D + 'table_small.gltf.glb', { x: 2.4, z: -0.9, ry: 0.2, s: 0.85, solid: true });
   put(scene, colliders, D + 'candle_lit.gltf.glb', { x: 2.4, y: 0.85, z: -0.9, s: 0.4 });
+  candleFlame(scene, 2.4, 1.21, -0.9, 0.9);    // lone table candle
   put(scene, colliders, D + 'stool.gltf.glb', { x: 3.3, z: -1.3, s: 0.85 });
   put(scene, colliders, D + 'stool.gltf.glb', { x: 2.0, z: -1.9, s: 0.85 });
   put(scene, colliders, D + 'stool.gltf.glb', { x: -1.5, z: -0.7, s: 0.85 });

@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { preloadModels } from './assets.js';
 import { buildWorld, WORLD_MODELS } from './world.js';
 import { assembleTown, TOWN_MODELS } from './buildings.js';
@@ -45,9 +49,23 @@ async function boot() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.8;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
+
+  // post chain: render -> subtle bloom (emissive flames, smoke-lit sun) -> output.
+  // OutputPass applies the same ACES curve the bare renderer would, so the
+  // low-fps fallback path (plain renderer.render) looks identical minus glow.
+  const composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight), 0.35, 0.35, 1.5);
+  composer.addPass(renderPass);
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+  let usePostFx = true;
 
   const world = buildWorld(scene);
   const town = assembleTown(scene, world.groundHeight);
@@ -63,7 +81,7 @@ async function boot() {
     groundHeight: world.groundHeight,
     hotspots: [...town.hotspots, ...townNpcs.hotspots],
     tick: (dt, playerPos, t) => {
-      world.tick(dt);
+      world.tick(dt, playerPos, t);
       townNpcs.tick(dt, playerPos, t);
     },
   };
@@ -156,6 +174,9 @@ async function boot() {
     stage.scene.remove(controls.player);
     if (params.get('cam') === 'aerial') {
       stage.scene.fog = null;
+      // the sky dome only reads from inside; from up here it blows out
+      const skyDome = stage.scene.getObjectByName('sky');
+      if (skyDome) skyDome.visible = false;
       camera.position.set(0, 95, 105);
       camera.lookAt(0, 0, 0);
     } else {
@@ -197,6 +218,7 @@ async function boot() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
   });
 
   const projected = new THREE.Vector3();
@@ -238,9 +260,10 @@ async function boot() {
     perfChecked = true;
     const fps = perfFrames / perfTime;
     if (fps < 24) {
+      usePostFx = false; // skip the composer: bloom is the priciest thing we do
       renderer.setPixelRatio(0.6);
       renderer.setSize(window.innerWidth, window.innerHeight);
-      console.info(`phandalin: ${fps.toFixed(0)} fps — lowered render resolution for smoothness`);
+      console.info(`phandalin: ${fps.toFixed(0)} fps — lowered render resolution, disabled bloom`);
     }
   }
 
@@ -266,6 +289,8 @@ async function boot() {
       );
     }
 
-    renderer.render(stage.scene, camera);
+    renderPass.scene = stage.scene; // follow the player between town and interiors
+    if (usePostFx) composer.render();
+    else renderer.render(stage.scene, camera);
   });
 }

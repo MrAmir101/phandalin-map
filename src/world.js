@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Sky } from 'three/addons/objects/Sky.js';
 import { meshData, cloneModel } from './assets.js';
 
 // Terrain, roads, vegetation, lighting, fog, and the manor hill.
@@ -163,13 +164,31 @@ export function buildWorld(scene) {
   const colliders = [];
   const rng = mulberry32(1234);
 
-  scene.fog = new THREE.Fog(0xb6d4ea, 60, 170);
-  scene.background = new THREE.Color(0xb6d4ea);
+  // --- golden hour: physical sky dome with a low western sun ---
+  const sky = new Sky();
+  sky.name = 'sky'; // the aerial debug view hides it along with the fog
+  sky.scale.setScalar(440); // box corners stay inside the camera's 500 m far plane
+  const sunDir = new THREE.Vector3().setFromSphericalCoords(
+    1,
+    THREE.MathUtils.degToRad(90 - 14),  // elevation 14° — long shadows
+    THREE.MathUtils.degToRad(-104)      // azimuth: low in the west
+  );
+  const skyU = sky.material.uniforms;
+  skyU.turbidity.value = 3.5;
+  skyU.rayleigh.value = 2;
+  skyU.mieCoefficient.value = 0.004;
+  skyU.mieDirectionalG.value = 0.95; // tight golden sun glow, not a whiteout
+  skyU.sunPosition.value.copy(sunDir);
+  scene.add(sky);
 
-  // lights
-  scene.add(new THREE.HemisphereLight(0xbfd8ec, 0x8a955f, 1.1));
-  const sun = new THREE.DirectionalLight(0xfff0d0, 1.5);
-  sun.position.set(45, 100, 35);
+  // haze matched to the sky's horizon tint (aerial debug clears the fog)
+  scene.fog = new THREE.Fog(0xe3b88f, 70, 185);
+  scene.background = new THREE.Color(0xe3b88f);
+
+  // lights: cool blue from the sky half, warm bounce off the sunlit ground
+  scene.add(new THREE.HemisphereLight(0xa8bedd, 0x8f7244, 0.95));
+  const sun = new THREE.DirectionalLight(0xffc070, 3.2);
+  sun.position.copy(sunDir).multiplyScalar(140);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -120; sun.shadow.camera.right = 120;
@@ -300,11 +319,11 @@ export function buildWorld(scene) {
   fence(-81, -56, -81, -40); fence(-81, -40, -62, -40); fence(-81, -56, -62, -56);
   scene.add(instancedModel(NEUTRAL + 'fence_wood_straight.gltf', fenceSegs));
 
-  // --- clouds (KayKit models, brightened so they read against the sky) ---
+  // --- clouds (KayKit models, lit warm so they catch the low sun) ---
   const clouds = new THREE.Group();
   const cloudMat = new THREE.MeshStandardMaterial({
-    color: 0xf6f9fc, flatShading: true, roughness: 1,
-    emissive: 0xffffff, emissiveIntensity: 0.35,
+    color: 0xf3ece2, flatShading: true, roughness: 1,
+    emissive: 0xffe3c2, emissiveIntensity: 0.45,
   });
   const cloudList = [];
   for (let i = 0; i < 7; i++) {
@@ -319,12 +338,133 @@ export function buildWorld(scene) {
   }
   scene.add(clouds);
 
-  function tick(dt) {
+  // --- hearth smoke from the lived-in chimneys ---
+  // The inn's chimney is baked into its model; the farm cottage has one too.
+  // The townmaster's hall (a KayKit barracks) doesn't, so it gets a small
+  // procedural stone stack for its smoke to rise from.
+  const hallChimney = new THREE.Group();
+  {
+    const stack = new THREE.Mesh(new THREE.BoxGeometry(0.85, 3.2, 0.85), mat(0x6f6c66));
+    stack.position.y = -1.5;
+    stack.castShadow = true;
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.3, 1.15), mat(0x5c5953));
+    cap.position.y = -0.05;
+    cap.castShadow = true;
+    hallChimney.add(stack, cap);
+    hallChimney.position.set(13.6, 7.6, 4.4);
+    scene.add(hallChimney);
+  }
+  const smoke = makeSmoke(scene, [
+    { x: -12.1, y: groundHeight(-10, -12) + 11.4, z: -12.6 },          // Stonehill Inn
+    { x: 13.6, y: 7.75, z: 4.4 },                                       // Townmaster's Hall
+    { x: -39.8, y: groundHeight(-38, 36) + 6.4, z: 37.8 },              // Alderleaf Farm
+  ]);
+
+  // --- dust motes drifting through the golden light near the shade trees ---
+  const motes = makeMotes(scene, [
+    [-26, 22], [22, 22], [-12, -42], [38, -18], [-8, 50], [10, -44], [-55, 8],
+  ], rng);
+
+  function tick(dt, _playerPos, t = 0) {
     for (const c of cloudList) {
       c.g.position.x += c.speed * dt;
       if (c.g.position.x > 150) c.g.position.x = -150;
     }
+    smoke.tick(t);
+    motes.tick(t);
   }
 
   return { colliders, bounds: BOUNDS, groundHeight, tick };
+}
+
+// --- atmosphere helpers ---
+
+// soft round puff, drawn once onto a small canvas
+function puffTexture(inner = 0.9, mid = 0.38) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+  g.addColorStop(0, `rgba(255,255,255,${inner})`);
+  g.addColorStop(0.45, `rgba(255,255,255,${mid})`);
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+
+const SMOKE_LIFE = 7; // seconds for one puff to rise and fade
+function makeSmoke(scene, spots) {
+  const tex = puffTexture(1.0, 0.55);
+  const rng = mulberry32(99);
+  const puffs = [];
+  for (const s of spots) {
+    for (let i = 0; i < 12; i++) {
+      const m = new THREE.SpriteMaterial({
+        map: tex, color: 0x9a9187, transparent: true, opacity: 0,
+        depthWrite: false, rotation: rng() * 6.28,
+      });
+      const sp = new THREE.Sprite(m);
+      sp.position.set(s.x, s.y, s.z);
+      scene.add(sp);
+      puffs.push({ sp, s, phase: i / 12, spin: (rng() - 0.5) * 0.35, wob: rng() * 6.28 });
+    }
+  }
+  return {
+    tick(t) {
+      for (const p of puffs) {
+        const u = (t / SMOKE_LIFE + p.phase) % 1;
+        const drift = u * u * 4.0; // wind pushes harder as the puff climbs
+        p.sp.position.set(
+          p.s.x + drift + Math.sin(p.wob + t * 0.7 + u * 5) * 0.28 * u,
+          p.s.y + u * 6.4,
+          p.s.z + Math.cos(p.wob + u * 4) * 0.35 * u
+        );
+        const scale = 0.8 + u * 3.0;
+        p.sp.scale.setScalar(scale);
+        p.sp.material.rotation = p.wob + p.spin * t;
+        const fadeIn = Math.min(1, u / 0.12);
+        p.sp.material.opacity = 0.85 * fadeIn * Math.pow(1 - u, 0.65);
+      }
+    },
+  };
+}
+
+// fireflies / sunlit dust hanging around the town's shade trees
+function makeMotes(scene, spots, rng) {
+  const tex = puffTexture(1, 0.5);
+  const count = spots.length * 9;
+  const base = new Float32Array(count * 3);
+  const seed = new Float32Array(count);
+  const pos = new Float32Array(count * 3);
+  let k = 0;
+  for (const [tx, tz] of spots) {
+    for (let i = 0; i < 9; i++, k++) {
+      const a = rng() * 6.28, r = 1 + rng() * 3.2;
+      base[k * 3] = tx + Math.cos(a) * r;
+      base[k * 3 + 1] = groundHeight(tx, tz) + 0.6 + rng() * 2.4;
+      base[k * 3 + 2] = tz + Math.sin(a) * r;
+      seed[k] = rng() * 6.28;
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const moteMat = new THREE.PointsMaterial({
+    map: tex, color: 0xffce7a, size: 0.16, transparent: true, opacity: 0.85,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+  });
+  const points = new THREE.Points(geo, moteMat);
+  points.frustumCulled = false; // positions update in place; skip stale-bounds culling
+  scene.add(points);
+  return {
+    tick(t) {
+      for (let i = 0; i < count; i++) {
+        const s = seed[i];
+        pos[i * 3] = base[i * 3] + Math.sin(t * 0.5 + s) * 0.6;
+        pos[i * 3 + 1] = base[i * 3 + 1] + Math.sin(t * 0.8 + s * 2) * 0.35;
+        pos[i * 3 + 2] = base[i * 3 + 2] + Math.cos(t * 0.4 + s) * 0.6;
+      }
+      geo.attributes.position.needsUpdate = true;
+    },
+  };
 }
