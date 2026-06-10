@@ -298,7 +298,7 @@ const LAYOUT = {
   'sleeping-giant': { w: 8, d: 6, wall: 0x8a7560, roof: 0x6e5d49, sign: 0x6e5d49, lean: 0.035, rotY: Math.PI },
   'townmasters-hall': { w: 10, d: 8, wall: 0xa39a85, roof: 0x7a4a2f, chimney: true, rotY: -Math.PI / 2 },
   'tresendar-manor': { ruin: true, w: 14, d: 10, rotY: -Math.PI / 2 },
-  'edermath-orchard': { w: 6, d: 5, wall: 0xb08a5e, roof: 0x96703f, chimney: true, rotY: Math.PI / 4 },
+  'edermath-orchard': { w: 6, d: 5, wall: 0xb08a5e, roof: 0x96703f, chimney: true, rotY: Math.PI / 2 },
 };
 
 function footprintAABB(x, z, w, d, rotY, pad = 0.2) {

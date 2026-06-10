@@ -42,7 +42,7 @@ const ROADS = [
   { w: 1.8, pts: [[1, -7], [4, -22]] },              // spur: shrine
   { w: 1.8, pts: [[0, 28], [14, 28]] },              // spur: exchange
   { w: 2.0, pts: [[0, 40], [-30, 38]] },             // spur: farm
-  { w: 2.0, pts: [[-28, -26], [-44, -40]] },         // spur: orchard
+  { w: 2.0, pts: [[-48, -44], [-54, -44]] },         // spur: orchard cottage
 ];
 
 function distToSegment(px, pz, ax, az, bx, bz) {
@@ -193,11 +193,11 @@ export function buildWorld(scene) {
     treeCollide(x, z);
   }
 
-  // orchard: apple trees in rows
+  // orchard: apple trees in rows, across the trail from Daran's cottage
   const apples = [];
   for (let row = 0; row < 3; row++) {
     for (let col = 0; col < 4; col++) {
-      const x = -60 + col * 4.5, z = -52 + row * 4.5;
+      const x = -78 + col * 4.5, z = -52 + row * 4.5;
       apples.push({ x, y: groundHeight(x, z), z, s: 0.9 + rng() * 0.25, ry: rng() * 6.28 });
       treeCollide(x, z, 0.4);
     }
@@ -263,8 +263,8 @@ export function buildWorld(scene) {
   // farm field (gap on the north side, toward the cottage)
   fence(-50, 42, -50, 54); fence(-50, 54, -34, 54); fence(-34, 54, -34, 42);
   fence(-34, 42, -44, 42);
-  // orchard (gap on the east side)
-  fence(-64, -56, -64, -36); fence(-64, -36, -46, -36); fence(-64, -56, -46, -56);
+  // orchard (gap on the east side, toward the trail)
+  fence(-81, -56, -81, -40); fence(-81, -40, -62, -40); fence(-81, -56, -62, -56);
 
   const postGeo = new THREE.BoxGeometry(0.18, 1.1, 0.18);
   postGeo.translate(0, 0.55, 0);

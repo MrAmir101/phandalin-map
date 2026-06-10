@@ -101,7 +101,7 @@ export const npcs = [
   },
   {
     id: 'daran', name: 'Daran Edermath', role: 'Orchardist, retired marshal',
-    location: 'edermath-orchard', scene: 'town', position: [-44, -38.5], facing: Math.PI / 4,
+    location: 'edermath-orchard', scene: 'town', position: [-52, -46.5], facing: -Math.PI / 2,
     look: { body: 0x4e6e51, head: 0xe3b58b, hair: 0xd8d8d8 },
     lines: [
       'Fine apples this year. Take one for the road — frontier hospitality.',

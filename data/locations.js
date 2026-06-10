@@ -198,7 +198,7 @@ export const locations = [
   {
     id: 'edermath-orchard',
     name: 'Edermath Orchard',
-    position: [-48, -42],
+    position: [-58, -44],
     blurb: 'Neat rows of apple trees beside a small cottage.',
     description: [
       'Apple trees stand in disciplined ranks beside a modest cottage on the northwest edge of town. The orchard is the work of Daran Edermath, a silver-haired half-elf with the bearing of an old soldier — which is exactly what he is.',
