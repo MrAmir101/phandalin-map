@@ -44,6 +44,13 @@ All game text lives in `data/` — no 3D knowledge needed:
 
 Keep it player-safe: the test suite fails if known spoiler names appear.
 
+## Credits
+
+3D models are from [KayKit](https://kaylousberg.com/game-assets) by Kay Lousberg
+(Medieval Hexagon Pack, Character Pack: Adventurers, Dungeon Remastered,
+Furniture Bits) — all CC0, license files included under `assets/`. Thanks Kay!
+Rendering by [three.js](https://threejs.org) (vendored).
+
 ## Tests
 
 ```sh
