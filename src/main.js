@@ -4,6 +4,7 @@ import { assembleTown } from './buildings.js';
 import { createControls } from './controls.js';
 import { createUI } from './ui.js';
 import { pickHotspot, actionVerb } from './interact.js';
+import { spawnNpcs } from './npcs.js';
 import { locations } from '../data/locations.js';
 
 const canvas = document.getElementById('scene');
@@ -37,6 +38,7 @@ function boot() {
 
   const world = buildWorld(scene);
   const town = assembleTown(scene, world.groundHeight);
+  const townNpcs = spawnNpcs(scene, 'town', world.groundHeight);
   const locationById = new Map(locations.map((l) => [l.id, l]));
 
   // the active "stage" — town now, an interior after walking through a door
@@ -46,8 +48,11 @@ function boot() {
     colliders: [...world.colliders, ...town.colliders],
     bounds: world.bounds,
     groundHeight: world.groundHeight,
-    hotspots: town.hotspots,
-    tick: (dt) => world.tick(dt),
+    hotspots: [...town.hotspots, ...townNpcs.hotspots],
+    tick: (dt, playerPos, t) => {
+      world.tick(dt);
+      townNpcs.tick(dt, playerPos, t);
+    },
   };
 
   const controls = createControls(camera, scene, canvas);
@@ -67,7 +72,9 @@ function boot() {
 
   function activateHotspot(h) {
     if (!h) return;
-    if (h.kind === 'location' || h.kind === 'enter') {
+    if (h.kind === 'npc') {
+      ui.showDialog(h.npc);
+    } else if (h.kind === 'location' || h.kind === 'enter') {
       const loc = locationById.get(h.id);
       if (loc) ui.showLocation(loc);
     }
@@ -107,6 +114,10 @@ function boot() {
     if (params.has('panel')) {
       const loc = locationById.get(params.get('panel'));
       if (loc) ui.showLocation(loc);
+    }
+    if (params.has('dialog')) {
+      const h = active.hotspots.find((s) => s.id === params.get('dialog'));
+      if (h) ui.showDialog(h.npc);
     }
   } else {
     startScreen.addEventListener('click', () => {
@@ -153,13 +164,13 @@ function boot() {
   const clock = new THREE.Clock();
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), 0.05);
-    active.tick(dt);
+    const pos = debugView
+      ? { x: camera.position.x, z: camera.position.z }
+      : { x: controls.player.position.x, z: controls.player.position.z };
+    active.tick(dt, pos, clock.elapsedTime);
     controls.update(dt, active);
 
     if (started || debugView) {
-      const pos = debugView
-        ? { x: camera.position.x, z: camera.position.z }
-        : { x: controls.player.position.x, z: controls.player.position.z };
       const yaw = debugView ? camera.rotation.y : controls.yaw;
       currentHotspot = pickHotspot(pos, yaw, active.hotspots, 4);
       ui.updateTarget(

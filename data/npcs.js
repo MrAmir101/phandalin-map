@@ -111,7 +111,7 @@ export const npcs = [
   },
   {
     id: 'redbrand-1', name: 'Redbrand Ruffian', role: 'Tough in a grubby scarlet cloak',
-    location: 'sleeping-giant', scene: 'town', position: [36.5, 15.5], facing: Math.PI / 2,
+    location: 'sleeping-giant', scene: 'town', position: [37, 7.2], facing: Math.PI / 2,
     look: { body: 0x8c2f2f, head: 0xc9986f, hair: 0x2b2b2b, hood: true },
     lines: [
       "You lost? The Sleeping Giant's for regulars. Everywhere else is... also for regulars.",
@@ -121,7 +121,7 @@ export const npcs = [
   },
   {
     id: 'redbrand-2', name: 'Redbrand Ruffian', role: 'Tough in a grubby scarlet cloak',
-    location: 'sleeping-giant', scene: 'town', position: [42.5, 16.5], facing: 0,
+    location: 'sleeping-giant', scene: 'town', position: [43, 8.0], facing: 0,
     look: { body: 0x7e2a2a, head: 0xd9a47c, hair: 0x4b3621, hood: true },
     lines: [
       "Keep walking, friend. That's free advice, and the last free thing you'll get from me.",
