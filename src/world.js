@@ -142,9 +142,9 @@ export function buildWorld(scene) {
   scene.background = new THREE.Color(0xb6d4ea);
 
   // lights
-  scene.add(new THREE.HemisphereLight(0xbfd8ec, 0x8a955f, 0.85));
-  const sun = new THREE.DirectionalLight(0xfff0d0, 1.6);
-  sun.position.set(60, 90, -40);
+  scene.add(new THREE.HemisphereLight(0xbfd8ec, 0x8a955f, 1.1));
+  const sun = new THREE.DirectionalLight(0xfff0d0, 1.5);
+  sun.position.set(45, 100, 35);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -120; sun.shadow.camera.right = 120;
