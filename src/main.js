@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildWorld } from './world.js';
 import { assembleTown } from './buildings.js';
+import { buildInn, buildGiant } from './interiors.js';
 import { createControls } from './controls.js';
 import { createUI } from './ui.js';
 import { pickHotspot, actionVerb } from './interact.js';
@@ -41,10 +42,10 @@ function boot() {
   const townNpcs = spawnNpcs(scene, 'town', world.groundHeight);
   const locationById = new Map(locations.map((l) => [l.id, l]));
 
-  // the active "stage" — town now, an interior after walking through a door
-  const active = {
+  // a "stage" is whatever the player currently walks around in:
+  // the town, or one of the interiors
+  const townStage = {
     scene,
-    camera,
     colliders: [...world.colliders, ...town.colliders],
     bounds: world.bounds,
     groundHeight: world.groundHeight,
@@ -54,6 +55,17 @@ function boot() {
       townNpcs.tick(dt, playerPos, t);
     },
   };
+  let stage = townStage;
+
+  const interiorCache = new Map();
+  function getInterior(loc) {
+    if (!interiorCache.has(loc.interior)) {
+      const built = loc.interior === 'inn' ? buildInn(loc.id) : buildGiant(loc.id);
+      built.locationId = loc.id;
+      interiorCache.set(loc.interior, built);
+    }
+    return interiorCache.get(loc.interior);
+  }
 
   const controls = createControls(camera, scene, canvas);
   // arrive on the Triboar Trail, looking down the road into town
@@ -70,11 +82,37 @@ function boot() {
   let started = false;
   let currentHotspot = null;
 
+  function setStage(next, x, z, yaw) {
+    stage = next;
+    stage.scene.add(controls.player); // reparents from the previous scene
+    controls.placeAt(x, z, yaw, stage.groundHeight);
+  }
+
+  function enterInterior(loc, instant = false) {
+    const interior = getInterior(loc);
+    const { spawn } = interior;
+    const go = () => setStage(interior, spawn.x, spawn.z, spawn.yaw);
+    instant ? go() : ui.fade(go);
+  }
+
+  function exitInterior() {
+    const door = townStage.hotspots.find(
+      (h) => h.kind === 'enter' && h.id === stage.locationId
+    );
+    const dx = Math.sin(door.enterYaw), dz = Math.cos(door.enterYaw);
+    ui.fade(() => setStage(townStage, door.x + dx * 0.4, door.z + dz * 0.4, door.exitYaw));
+  }
+
   function activateHotspot(h) {
     if (!h) return;
     if (h.kind === 'npc') {
       ui.showDialog(h.npc);
-    } else if (h.kind === 'location' || h.kind === 'enter') {
+    } else if (h.kind === 'enter') {
+      const loc = locationById.get(h.id);
+      if (loc && loc.interior) enterInterior(loc);
+    } else if (h.kind === 'exit') {
+      exitInterior();
+    } else if (h.kind === 'location') {
       const loc = locationById.get(h.id);
       if (loc) ui.showLocation(loc);
     }
@@ -98,15 +136,19 @@ function boot() {
   const debugView = params.has('cam') || params.has('at');
   if (debugView) {
     startScreen.classList.add('hidden');
+    if (params.has('interior')) {
+      const loc = locations.find((l) => l.interior === params.get('interior'));
+      if (loc) enterInterior(loc, true);
+    }
     controls.player.remove(camera); // free camera from the player rig
-    scene.remove(controls.player);
+    stage.scene.remove(controls.player);
     if (params.get('cam') === 'aerial') {
-      scene.fog = null;
+      stage.scene.fog = null;
       camera.position.set(0, 95, 105);
       camera.lookAt(0, 0, 0);
     } else {
       const [x = 0, z = 20, yaw = 0, pitch = 0] = (params.get('at') || '').split(',').map(Number);
-      camera.position.set(x, world.groundHeight(x, z) + 1.7, z);
+      camera.position.set(x, stage.groundHeight(x, z) + 1.7, z);
       camera.rotation.order = 'YXZ';
       camera.rotation.y = yaw;
       camera.rotation.x = pitch;
@@ -116,7 +158,7 @@ function boot() {
       if (loc) ui.showLocation(loc);
     }
     if (params.has('dialog')) {
-      const h = active.hotspots.find((s) => s.id === params.get('dialog'));
+      const h = stage.hotspots.find((s) => s.id === params.get('dialog'));
       if (h) ui.showDialog(h.npc);
     }
   } else {
@@ -147,7 +189,7 @@ function boot() {
 
   const projected = new THREE.Vector3();
   function project(h) {
-    projected.set(h.x, h.labelY ?? world.groundHeight(h.x, h.z) + 2.2, h.z).project(camera);
+    projected.set(h.x, h.labelY ?? stage.groundHeight(h.x, h.z) + 2.2, h.z).project(camera);
     return {
       visible: projected.z < 1 && Math.abs(projected.x) < 1 && Math.abs(projected.y) < 1,
       x: (projected.x * 0.5 + 0.5) * window.innerWidth,
@@ -157,6 +199,7 @@ function boot() {
 
   function hotspotName(h) {
     if (h.kind === 'npc') return h.name;
+    if (h.kind === 'exit') return 'Back to town';
     const loc = locationById.get(h.id);
     return loc ? loc.name : h.id;
   }
@@ -167,12 +210,12 @@ function boot() {
     const pos = debugView
       ? { x: camera.position.x, z: camera.position.z }
       : { x: controls.player.position.x, z: controls.player.position.z };
-    active.tick(dt, pos, clock.elapsedTime);
-    controls.update(dt, active);
+    stage.tick(dt, pos, clock.elapsedTime);
+    controls.update(dt, stage);
 
     if (started || debugView) {
       const yaw = debugView ? camera.rotation.y : controls.yaw;
-      currentHotspot = pickHotspot(pos, yaw, active.hotspots, 4);
+      currentHotspot = pickHotspot(pos, yaw, stage.hotspots, 4);
       ui.updateTarget(
         currentHotspot,
         currentHotspot && hotspotName(currentHotspot),
@@ -181,6 +224,6 @@ function boot() {
       );
     }
 
-    renderer.render(active.scene, active.camera);
+    renderer.render(stage.scene, camera);
   });
 }

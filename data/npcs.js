@@ -9,7 +9,7 @@
 export const npcs = [
   {
     id: 'toblen', name: 'Toblen Stonehill', role: 'Innkeeper',
-    location: 'stonehill-inn', scene: 'inn', position: [-4.2, 0], facing: -Math.PI / 2,
+    location: 'stonehill-inn', scene: 'inn', position: [-5.4, 0], facing: -Math.PI / 2,
     look: { body: 0x7a5230, head: 0xe8b88a, hair: 0x4b3621 },
     lines: [
       "Welcome to the Stonehill! A room's five silver, and Trilena's stew is the best between here and Neverwinter.",
@@ -81,7 +81,7 @@ export const npcs = [
   },
   {
     id: 'grista', name: 'Grista', role: 'Barkeep of the Sleeping Giant',
-    location: 'sleeping-giant', scene: 'giant', position: [0, 2.2], facing: 0,
+    location: 'sleeping-giant', scene: 'giant', position: [0, 3.0], y: 0.45, facing: 0,
     look: { body: 0x5a4632, head: 0xd9a47c, hair: 0xa8502e, child: true },
     lines: [
       'What. You drinking or leaving?',
@@ -141,7 +141,7 @@ export const npcs = [
   },
   {
     id: 'redbrand-4', name: 'Redbrand Ruffian', role: 'Tough in a grubby scarlet cloak',
-    location: 'sleeping-giant', scene: 'giant', position: [-1.4, 1.3], facing: Math.PI,
+    location: 'sleeping-giant', scene: 'giant', position: [1.7, -0.2], facing: Math.PI,
     look: { body: 0x7e2a2a, head: 0xd9a47c, hair: 0x2b2b2b, hood: true },
     lines: [
       "Grista! Another round, on the... town's tab. Heh.",

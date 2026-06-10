@@ -10,32 +10,32 @@ function makePerson(look) {
   const scale = look.child ? 0.62 : 1;
 
   const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.26, look.hood ? 0.4 : 0.36, 1.05, 7),
+    new THREE.CylinderGeometry(0.26, look.hood ? 0.4 : 0.36, 1.3, 7),
     mat(look.body)
   );
-  body.position.y = 0.62;
+  body.position.y = 0.72;
   body.castShadow = true;
   g.add(body);
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 7, 6), mat(look.head));
-  head.position.y = 1.36;
+  head.position.y = 1.58;
   head.castShadow = true;
   g.add(head);
 
   if (look.hood) {
     const hood = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.58, 7), mat(look.body));
-    hood.position.y = 1.46;
+    hood.position.y = 1.68;
     g.add(hood);
   } else if (look.hair != null) {
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.22, 7, 5), mat(look.hair));
-    hair.position.y = 1.42;
+    hair.position.y = 1.64;
     hair.scale.set(1, 0.62, 1);
     g.add(hair);
   }
 
   for (const sx of [-1, 1]) {
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.75, 5), mat(look.body));
-    arm.position.set(sx * 0.34, 0.78, 0);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.85, 5), mat(look.body));
+    arm.position.set(sx * 0.34, 0.92, 0);
     arm.rotation.z = sx * 0.18;
     g.add(arm);
   }
@@ -51,7 +51,7 @@ export function spawnNpcs(scene, sceneId, groundHeight) {
   for (const data of npcs.filter((n) => n.scene === sceneId)) {
     const mesh = makePerson(data.look);
     const [x, z] = data.position;
-    const y = groundHeight ? groundHeight(x, z) : 0;
+    const y = (groundHeight ? groundHeight(x, z) : 0) + (data.y || 0);
     mesh.position.set(x, y, z);
     mesh.rotation.y = data.facing;
     scene.add(mesh);
