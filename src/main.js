@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { buildWorld } from './world.js';
+import { assembleTown } from './buildings.js';
 
 const canvas = document.getElementById('scene');
 
@@ -31,6 +32,7 @@ function boot() {
   const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
 
   const world = buildWorld(scene);
+  const town = assembleTown(scene, world.groundHeight);
 
   // debug views for development screenshots: ?cam=aerial or ?at=x,z,yaw
   const params = new URLSearchParams(location.search);
