@@ -123,7 +123,9 @@ export const npcs = [
   },
   {
     id: 'redbrand-1', name: 'Redbrand Ruffian', role: 'Tough in a grubby scarlet cloak',
-    location: 'sleeping-giant', scene: 'town', position: [37, 7.2], facing: Math.PI / 2,
+    // loiters by the barrels at the tavern's west corner — kept >4 m from the
+    // door hotspot at (40, ~7.9) so his talk prompt can't shadow the Enter prompt
+    location: 'sleeping-giant', scene: 'town', position: [33.7, 11.6], facing: Math.PI / 2,
     look: { body: 0x8c2f2f, head: 0xc9986f, hair: 0x2b2b2b, hood: true },
     model: 'rogue-hooded', tint: 0x8a1f1a,
     lines: [
@@ -134,7 +136,8 @@ export const npcs = [
   },
   {
     id: 'redbrand-2', name: 'Redbrand Ruffian', role: 'Tough in a grubby scarlet cloak',
-    location: 'sleeping-giant', scene: 'town', position: [43, 8.0], facing: 0,
+    // east flank, by the broken crate — also kept >4 m from the door hotspot
+    location: 'sleeping-giant', scene: 'town', position: [44.2, 6.9], facing: 0,
     look: { body: 0x7e2a2a, head: 0xd9a47c, hair: 0x4b3621, hood: true },
     model: 'rogue-hooded', tint: 0x7a1f1f,
     lines: [

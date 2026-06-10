@@ -164,14 +164,18 @@ export function buildWorld(scene) {
   const colliders = [];
   const rng = mulberry32(1234);
 
-  // --- golden hour: physical sky dome with a low western sun ---
+  // --- golden hour: physical sky dome with a low north-eastern sun ---
+  // Morning light: it falls on the east-facing entrances of the Stonehill
+  // Inn and the Lionshield Coster (the two facades players study up close)
+  // and stays out of frame both on the Triboar Trail arrival view and at
+  // the inn doorstep, so the bloom pass never blows out those shots.
   const sky = new Sky();
   sky.name = 'sky'; // the aerial debug view hides it along with the fog
   sky.scale.setScalar(440); // box corners stay inside the camera's 500 m far plane
   const sunDir = new THREE.Vector3().setFromSphericalCoords(
     1,
     THREE.MathUtils.degToRad(90 - 14),  // elevation 14° — long shadows
-    THREE.MathUtils.degToRad(-104)      // azimuth: low in the west
+    THREE.MathUtils.degToRad(135)       // azimuth: low in the north-east
   );
   const skyU = sky.material.uniforms;
   skyU.turbidity.value = 3.5;
@@ -186,7 +190,8 @@ export function buildWorld(scene) {
   scene.background = new THREE.Color(0xe3b88f);
 
   // lights: cool blue from the sky half, warm bounce off the sunlit ground
-  scene.add(new THREE.HemisphereLight(0xa8bedd, 0x8f7244, 0.95));
+  // (a little extra fill so shaded facades stay readable, not gloomy)
+  scene.add(new THREE.HemisphereLight(0xa8bedd, 0x8f7244, 1.15));
   const sun = new THREE.DirectionalLight(0xffc070, 3.2);
   sun.position.copy(sunDir).multiplyScalar(140);
   sun.castShadow = true;

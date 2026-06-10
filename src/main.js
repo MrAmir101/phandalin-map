@@ -268,15 +268,17 @@ async function boot() {
   }
 
   renderer.setAnimationLoop(() => {
-    // generous clamp: keeps walk speed correct down to ~7 fps on weak
-    // machines while still preventing teleports after a background tab
-    const dt = Math.min(clock.getDelta(), 0.15);
+    const rawDt = clock.getDelta();
+    // animation ticks get a clamped dt (no smoke/NPC jumps after a hitch);
+    // movement gets the real frame time (capped against background tabs)
+    // and substeps internally, so walk speed holds even at ~3 fps
+    const dt = Math.min(rawDt, 0.15);
     adaptPerformance(dt);
     const pos = debugView
       ? { x: camera.position.x, z: camera.position.z }
       : { x: controls.player.position.x, z: controls.player.position.z };
     stage.tick(dt, pos, clock.elapsedTime);
-    controls.update(dt, stage);
+    controls.update(Math.min(rawDt, 0.5), stage);
 
     if (started || debugView) {
       const yaw = debugView ? camera.rotation.y : controls.yaw;

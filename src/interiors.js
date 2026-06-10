@@ -222,9 +222,12 @@ export function buildInn(locationId) {
 
   const npcStage = spawnNpcs(scene, 'inn', null);
 
+  // The "look around" info point lives at the hearth, NOT at the bar —
+  // a bar-side point sits between the player and Toblen and would always
+  // out-pick him (nearest hotspot wins).
   const hotspots = [
     { kind: 'exit', id: 'exit-inn', x: 5.6, z: 0, labelY: 2.3 },
-    { kind: 'location', id: locationId, x: -3.6, z: 0, labelY: 2.0 },
+    { kind: 'location', id: locationId, x: -1, z: -2.7, labelY: 2.2 },
     ...npcStage.hotspots,
   ];
 
@@ -287,9 +290,11 @@ export function buildGiant(locationId) {
 
   const npcStage = spawnNpcs(scene, 'giant', null);
 
+  // Info point by the barrel corner, clear of the bar: a point in front of
+  // the bar would sit between the player and Grista and out-pick her.
   const hotspots = [
     { kind: 'exit', id: 'exit-giant', x: 0, z: -3.1, labelY: 2.2 },
-    { kind: 'location', id: locationId, x: 0, z: 1.9, labelY: 2.0 },
+    { kind: 'location', id: locationId, x: 3.6, z: 1.5, labelY: 2.0 },
     ...npcStage.hotspots,
   ];
 

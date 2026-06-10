@@ -45,16 +45,22 @@ export function createControls(camera, scene, domElement) {
       const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? RUN_SPEED : WALK_SPEED;
       const yaw = player.rotation.y;
       // rotate local (mx, mz) by yaw into world space
-      const dx = (mx * Math.cos(yaw) + mz * Math.sin(yaw)) / len * speed * dt;
-      const dz = (-mx * Math.sin(yaw) + mz * Math.cos(yaw)) / len * speed * dt;
-      const next = resolveMovement(
-        { x: player.position.x, z: player.position.z },
-        { x: dx, z: dz }, RADIUS, env.colliders, env.bounds
-      );
-      player.position.x = next.x;
-      player.position.z = next.z;
+      const wx = (mx * Math.cos(yaw) + mz * Math.sin(yaw)) / len * speed;
+      const wz = (-mx * Math.sin(yaw) + mz * Math.cos(yaw)) / len * speed;
+      // integrate in <=50 ms substeps: walk speed stays correct even when a
+      // software renderer hands us a whole slow frame (~330 ms at 3 fps),
+      // and each substep moves at most 0.4 m so we can never tunnel through
+      // a thin fence/wall collider (player radius is 0.5 m)
+      const steps = Math.max(1, Math.ceil(dt / 0.05));
+      const h = dt / steps;
+      let pos = { x: player.position.x, z: player.position.z };
+      for (let i = 0; i < steps; i++) {
+        pos = resolveMovement(pos, { x: wx * h, z: wz * h }, RADIUS, env.colliders, env.bounds);
+      }
+      player.position.x = pos.x;
+      player.position.z = pos.z;
       if (env.groundHeight) {
-        const target = env.groundHeight(next.x, next.z);
+        const target = env.groundHeight(pos.x, pos.z);
         player.position.y += (target - player.position.y) * Math.min(1, dt * 12);
       }
     },

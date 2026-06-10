@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>probe</title>
+<base href="../">
+<script type="importmap">
+  {
+    "imports": {
+      "three": "../vendor/three.module.js",
+      "three/addons/": "../vendor/examples/jsm/"
+    }
+  }
+</script>
+</head>
+<body>
+<pre id="out">loading</pre>
+<script type="module">
+import * as THREE from 'three';
+import { preloadModels } from '../src/assets.js';
+import { buildWorld, WORLD_MODELS, groundHeight } from '../src/world.js';
+import { assembleTown, TOWN_MODELS } from '../src/buildings.js';
+import { buildInn, buildGiant, INTERIOR_MODELS } from '../src/interiors.js';
+import { spawnNpcs, NPC_MODELS } from '../src/npcs.js';
+import { pickHotspot } from '../src/interact.js';
+import { resolveMovement } from '../src/collision.js';
+
+const out = document.getElementById('out');
+try {
+  await preloadModels([...WORLD_MODELS, ...TOWN_MODELS, ...NPC_MODELS, ...INTERIOR_MODELS]);
+  const scene = new THREE.Scene();
+  const world = buildWorld(scene);
+  const town = assembleTown(scene, world.groundHeight);
+  const townNpcs = spawnNpcs(scene, 'town', world.groundHeight);
+  const colliders = [...world.colliders, ...town.colliders];
+  const hotspots = [...town.hotspots, ...townNpcs.hotspots];
+
+  const inside = (x, z, r = 0.5) =>
+    colliders.filter((c) => x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ);
+
+  // For each enter/location hotspot: position, whether a 0.5-radius player can
+  // stand there, and what pickHotspot returns when standing there facing enterYaw.
+  const report = { doors: [], steer: [], interiors: {} };
+  for (const h of hotspots.filter((h) => h.kind === 'enter' || h.kind === 'location')) {
+    const blockers = inside(h.x, h.z);
+    const picked = pickHotspot({ x: h.x, z: h.z }, h.enterYaw ?? 0, hotspots, 4);
+    report.doors.push({
+      id: h.id, kind: h.kind,
+      x: +h.x.toFixed(2), z: +h.z.toFixed(2),
+      enterYaw: +(h.enterYaw ?? 0).toFixed(2),
+      blocked: blockers.length,
+      blockers: blockers.map((b) => ({ minX: +b.minX.toFixed(1), maxX: +b.maxX.toFixed(1), minZ: +b.minZ.toFixed(1), maxZ: +b.maxZ.toFixed(1) })),
+      pickedHere: picked && { kind: picked.kind, id: picked.id },
+    });
+  }
+
+  // simulate a steerTo: walk straight from `from` toward target with collision,
+  // sliding, 4.5 m/s, 60fps, give up after 30s sim
+  function steer(from, target) {
+    let p = { x: from.x, z: from.z };
+    const dt = 1 / 60;
+    for (let i = 0; i < 30 * 60; i++) {
+      const dx = target.x - p.x, dz = target.z - p.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.6) return { ok: true, dist: +dist.toFixed(2), t: +(i * dt).toFixed(1) };
+      const step = Math.min(4.5 * dt, dist);
+      p = resolveMovement(p, { x: dx / dist * step, z: dz / dist * step }, 0.5, colliders, world.bounds);
+    }
+    return { ok: false, dist: +Math.hypot(target.x - p.x, target.z - p.z).toFixed(2), at: { x: +p.x.toFixed(1), z: +p.z.toFixed(1) } };
+  }
+
+  const spawnPos = { x: -68, z: -59 };
+  const innDoor = hotspots.find((h) => h.kind === 'enter' && h.id === 'stonehill-inn');
+  const giantDoor = hotspots.find((h) => h.kind === 'enter' && h.id === 'sleeping-giant');
+  const hallSpot = hotspots.find((h) => h.id === 'townmasters-hall');
+  report.steer.push({ leg: 'spawn->innDoor', ...steer(spawnPos, innDoor) });
+  report.steer.push({ leg: 'innDoor->giantDoor', ...steer(innDoor, giantDoor) });
+  report.steer.push({ leg: 'giantDoor->hall', ...steer(giantDoor, hallSpot) });
+
+  // interiors: spawn->toblen pick, spawn->grista, what's picked near each npc
+  for (const [name, build] of [['inn', buildInn], ['giant', buildGiant]]) {
+    const it = build(name === 'inn' ? 'stonehill-inn' : 'sleeping-giant');
+    const r = { hotspots: it.hotspots.map((h) => ({ kind: h.kind, id: h.id, x: +h.x.toFixed(2), z: +h.z.toFixed(2) })), npcChecks: [] };
+    for (const h of it.hotspots.filter((h) => h.kind === 'npc')) {
+      // walk from spawn toward the npc, then pick facing it
+      let p = { x: it.spawn.x, z: it.spawn.z };
+      const dt = 1 / 60;
+      for (let i = 0; i < 20 * 60; i++) {
+        const dx = h.x - p.x, dz = h.z - p.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 1.2) break;
+        const step = Math.min(4.5 * dt, dist);
+        const next = resolveMovement(p, { x: dx / dist * step, z: dz / dist * step }, 0.5, it.colliders, it.bounds);
+        if (Math.hypot(next.x - p.x, next.z - p.z) < 1e-4) break; // stuck
+        p = next;
+      }
+      const yaw = Math.atan2(-(h.x - p.x), -(h.z - p.z)); // face the npc
+      const picked = pickHotspot(p, yaw, it.hotspots, 4);
+      r.npcChecks.push({
+        npc: h.id, reached: +Math.hypot(h.x - p.x, h.z - p.z).toFixed(2),
+        standAt: { x: +p.x.toFixed(2), z: +p.z.toFixed(2) },
+        picked: picked && { kind: picked.kind, id: picked.id },
+      });
+    }
+    report.interiors[name] = r;
+  }
+
+  out.textContent = 'PROBE_OK ' + JSON.stringify(report, null, 1);
+} catch (e) {
+  out.textContent = 'PROBE_ERR ' + (e.stack || e);
+}
+</script>
+</body>
+</html>
