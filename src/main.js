@@ -215,10 +215,28 @@ function boot() {
   };
 
   const clock = new THREE.Clock();
+  // adaptive resolution: software renderers (VMs, old laptops) are
+  // fill-rate bound — dropping pixel ratio is a ~3x frame-time win
+  let perfFrames = 0, perfTime = 0, perfChecked = false;
+  function adaptPerformance(dt) {
+    if (perfChecked) return;
+    perfFrames += 1;
+    perfTime += dt;
+    if (perfTime < 4) return;
+    perfChecked = true;
+    const fps = perfFrames / perfTime;
+    if (fps < 24) {
+      renderer.setPixelRatio(0.6);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      console.info(`phandalin: ${fps.toFixed(0)} fps — lowered render resolution for smoothness`);
+    }
+  }
+
   renderer.setAnimationLoop(() => {
     // generous clamp: keeps walk speed correct down to ~7 fps on weak
     // machines while still preventing teleports after a background tab
     const dt = Math.min(clock.getDelta(), 0.15);
+    adaptPerformance(dt);
     const pos = debugView
       ? { x: camera.position.x, z: camera.position.z }
       : { x: controls.player.position.x, z: controls.player.position.z };

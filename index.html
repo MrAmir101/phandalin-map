@@ -14,8 +14,18 @@
 
 <div id="webgl-fail" class="hidden">
   <h1>Phandalin</h1>
-  <p>This explorer needs WebGL, which your browser doesn't seem to support.
-     Try a recent version of Firefox, Chrome, or Edge.</p>
+  <p>This explorer needs WebGL, and your browser couldn't create a 3D context.
+     This usually means graphics acceleration is unavailable (common in virtual
+     machines) and the browser refuses to fall back to software rendering.</p>
+  <p>Ways in, fastest first:</p>
+  <p>
+    1. Relaunch Chrome as: <code>google-chrome --enable-unsafe-swiftshader</code>
+       (software rendering — works anywhere, modest frame rate)<br>
+    2. Try Firefox, which still allows software WebGL by default<br>
+    3. In a VM: enable 3D acceleration (VirtualBox: Settings → Display →
+       Enable 3D Acceleration + 128&nbsp;MB video memory, with Guest Additions
+       installed), then restart the VM
+  </p>
 </div>
 
 <div id="start-screen">
